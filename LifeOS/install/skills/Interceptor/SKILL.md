@@ -1,6 +1,6 @@
 ---
 name: Interceptor
-description: "Real Chrome/Brave + macOS Computer Use from inside the browser — zero CDP fingerprint, real sessions; mandatory for visual deploy verification. Drive clickwork yourself. USE WHEN verify deploy, confirm UI, screenshot verification, computer use, macos automation, debug web, troubleshoot, visual check, motion/animation bug, jank, transition stutter, scrub a flow, console logs/errors, runtime/JS/react errors, mismatch warning, network traffic/log, HAR/pcapng export, hydration/blank-page debug, flash then blank/page broken, why is this not working/what's happening on the page, authenticated page, bot detection bypass, reproduce bug, drive native app, about to ask the operator to click/navigate/fill a form/log in/approve OAuth, OAuth consent flow, complete a web login, do this in your browser. NOT FOR residential-proxy crawling (BrightData) or social actor scraping (Apify)."
+description: "Real Chrome/Brave and native macOS automation from inside the browser: authenticated sessions, visual deploy checks, DOM/network/runtime diagnosis, screenshots, forms, and recorded flows. Drive browser clickwork yourself. USE WHEN verify deploy or UI, capture screenshots, inspect authenticated pages, reproduce web bugs, read console/network/DOM state, automate forms or OAuth consent, bypass bot detection, drive native apps, or record/replay browser flows. NOT FOR batch headless QA (use GStack), residential-proxy crawling (BrightData), or social actor scraping (Apify)."
 version: 4.3.12
 ---
 
@@ -108,6 +108,22 @@ CDP-based browser automation gets detected by sites. Interceptor is a Chrome ext
 - **AppleScript-driven tab switching** — `set active tab index of window N` is doubly forbidden: it both pulls focus and changes which tab the operator is looking at.
 
 **These rules survive Interceptor failures.** A wedged Interceptor is NOT a license to use raw OS tools. When Interceptor cannot deliver evidence, the recovery is to fix Interceptor (see WebSocket-wedge gotcha below) or to STOP and tell the operator the verification cannot be captured this run — never to fall back.
+
+**One narrow test-profile exception:** `Tools/Capture.sh` may lease the exact
+window named by a minimized error from the already preflighted, non-Default
+`INTERCEPTOR_TEST_CONTEXT_ID`: `minimized -> normal -> minimized`. It uses
+Interceptor's own browser `window_resize` action, never AppleScript or OS input;
+requires unchanged ID/type/geometry/incognito/active-tab fields and
+`focused:false`; normalizes and compares the frontmost-app identity immediately
+before state mutation, after capture returns, and after restoration; restores those
+same observable fields; and rejects/removes the capture if any invariant fails.
+The installed API does not expose window ordering, so this contract makes no
+ordering claim. A concurrent operator app-switch that remains changed at a
+sample invalidates the capture and is never reverted with focus manipulation.
+A switch-away-and-back wholly inside the blocking screenshot call is not
+observable through the installed API, so this proves that Capture did not leave
+focus changed, not continuous focus history. This exception never applies
+to Default/working profiles or to general window management.
 
 **Bridge-routed Computer Use is separate.** `interceptor macos open <app>`, `interceptor macos act <ref>`, `interceptor act <ref> --trusted` (formerly `--os`) and other bridge-routed actions go through the sanctioned bridge surface and are allowed when a workflow explicitly requires native app control. The prohibition above is on (a) raw OS-level paths that bypass Interceptor entirely AND (b) focus-pulling purely in service of a screenshot.
 
@@ -340,7 +356,7 @@ The full per-verb CLI listing — macOS Native (Computer Use), VM Lifecycle, Cor
 - **Verify with `frontmost` before/after.** Native workflows that promise no focus change should prove it.
 - **Never `screencapture`. Never `osascript` for Chrome focus, bounds, tabs, or windows.** Forbidden under Hard Prohibitions. Survives Interceptor failures.
 - **Anything lifecycle-dependent goes through `Tools/VerifyViewport.ts`** — animation, transitions, ResizeObserver/IntersectionObserver, lazy-load, scroll-reveal, viewport-responsive layout. The standard test context silently reports zero activity for all of these whenever its window isn't visible. See the Rendering-Lifecycle Gate section.
-- **Screenshots go through `Tools/Capture.sh`, never raw `interceptor screenshot`.** Capture.sh runs the preflight gate, enforces the not-Default target check, handles UUID-rot rebind, prefers the DOM-render path, and writes review artifacts to `$LIFEOS_DOWNLOADS_DIR` (default `~/Downloads/` when unset).
+- **Screenshots go through `Tools/Capture.sh`, never raw `interceptor screenshot`.** Capture.sh runs the preflight gate, enforces the not-Default target check, handles UUID-rot rebind, leases/restores an exact minimized test window without focus, prefers the DOM-render path, and writes review artifacts to `$LIFEOS_DOWNLOADS_DIR` (default `~/Downloads/` when unset).
 - **Tab hygiene — end every Interceptor work session with `bash ~/.claude/skills/Interceptor/Tools/CleanupTabs.sh`.** Every `open`/`tab new` leaves a tab behind, and the operator can see the test window fill up (observed 22 stale tabs, 2026-07-13). The tool closes all non-active tabs in the PINNED test context only — it keeps the active tab (window stays alive), honors `--keep-url <substr>` for tabs still in use, refuses Default/working profiles, and exits 0 when the context isn't connected. Run it once at the END of the task (after evidence is captured, before reporting), not between steps — mid-task cleanup kills tabs you still need. Prefer `open --reuse` during the task to avoid creating the mess in the first place.
 
 ## Delegating to Agents
@@ -407,8 +423,8 @@ Agent(subagent_type="general-purpose", prompt="
 - **`interceptor` dying instantly with rc=137 and ZERO output = invalid code signature, not a wedge.** The kernel SIGKILLs adhoc-signed binaries whose signature went stale (observed 2026-06-10 after a system event; both binaries affected). Diagnose: `cp` the binary to /tmp, `codesign -s - -f` the copy, run it — if the copy works, re-sign the real ones: `codesign -s - -f /opt/homebrew/bin/interceptor && codesign -s - -f /opt/homebrew/bin/interceptor-daemon`. BOTH must be re-signed — the CLI spawns `interceptor-daemon --standalone` and a still-broken daemon yields "daemon failed to start. Check /tmp/interceptor.log" with the log never created. *(2026-06-10.)*
 - **Screenshot — how it actually works (0.22.2).** Route every capture through `Tools/Capture.sh`; the raw behavior below is what it wraps.
   - **Default `interceptor screenshot` is the DOM-render path** — a **dependency-free native renderer since v0.18.3** (`html-to-image` was removed; injected on demand via `executeScript`). It renders from the live DOM tree and does **NOT** require a foreground/visible tab — a backgrounded tab on another macOS Space is fine, and it's fail-fast (no more full-timeout hang on a backgrounded tab).
-  - **`--pixel` is the opt-out** → legacy `captureVisibleTab`. It captures the window's *active* tab, so to capture a specific background tab it briefly activates it and restores focus — **the visible flash is by design**. `--pixel` REQUIRES the window non-minimized and visible; minimized → fast honest failure. Full-page `--pixel` rate-limits strips at 1100ms (Chrome's 2/sec cap) and stitches in the service worker.
-  - **Reliability is the default path, not a flag.** There is no "reliable mode" toggle. The robustness today is the in-extension minimized-window preflight (fails fast instead of hanging ~30s) plus the CLI's 45s screenshot timeout. The `cli/lib/screenshot-selfheal.ts` wrapper is **dormant/unwired** — do not cite it.
+  - **`--pixel` is the opt-out** → legacy `captureVisibleTab`. It captures the window's *active* tab, so to capture a specific background tab it briefly activates it and restores tab state — a visible window can flash by design. Raw `interceptor screenshot --pixel` requires a non-minimized window. The sanctioned `Capture.sh --pixel` path instead leases only the exact isolated test window from minimized to normal and back, while proving it stayed unfocused and the frontmost app did not move. Full-page `--pixel` rate-limits strips at 1100ms (Chrome's 2/sec cap) and stitches in the service worker.
+  - **Reliability is the default path, not a flag.** There is no "reliable mode" toggle. The extension's minimized-window preflight fails fast instead of hanging ~30s; `Capture.sh` then performs the bounded test-profile state lease above. The CLI's screenshot timeout remains 45s. The `cli/lib/screenshot-selfheal.ts` wrapper is **dormant/unwired** — do not cite it.
   - **`--save` writes to the CLI's current working directory** and returns `filePath` (omits `dataUrl`). It does NOT write to `/tmp/pai-screenshots/` — workflows `cd` there precisely because `--save` targets CWD. There is no `--output <path>` flag; positional path args are silently ignored. Per OPERATIONAL_RULES, review artifacts belong in `$LIFEOS_DOWNLOADS_DIR` (default `~/Downloads/` when unset), pipeline intermediates in `/tmp/`; `Tools/Capture.sh` standardizes this.
   - **Without `--save`, `screenshot` returns the full base64 `dataUrl` inline** — 10MB+ of PNG flooding the transcript. Always `--save` from an agent context.
   - Flags `--target-max-long-edge N` (clamp long edge, dodges the 16384 Skia ceiling), `--scale`, `--selector`, `--element N`, `--region X,Y,W,H` run inside DOM-render; `--clip` is a deprecated alias for `--region`.
