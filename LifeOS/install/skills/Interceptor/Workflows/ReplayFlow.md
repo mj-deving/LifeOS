@@ -35,7 +35,7 @@ Non-zero exit → STOP and surface the message verbatim. Do not fall back to the
 
 ### 1. Locate the Flow Plan
 
-Recorded flows live in `skills/Interceptor/Flows/`. List available flows:
+Reusable publish-clean examples may live in `skills/Interceptor/Flows/`; project-specific plans live with their owning project's tests or evidence. List shared examples with:
 
 ```bash
 ls ~/.claude/skills/Interceptor/Flows/
@@ -106,22 +106,9 @@ For each step in the plan, report:
 - FAIL: action failed or unexpected state detected
 - REGRESSION: behavior changed from baseline
 
-## Using Batch for Known Flows
+## Batch Safety Gate
 
-For well-tested flows where you trust the commands, use batch execution:
-
-```bash
-interceptor batch '[
-  {"type": "navigate", "url": "https://example.com"},
-  {"type": "wait_stable"},
-  {"type": "click", "ref": "button:Sign In"},
-  {"type": "wait_stable"},
-  {"type": "type", "ref": "textbox:Email", "value": "user@example.com"},
-  {"type": "click", "ref": "button:Submit"}
-]' --stop-on-error --context "$INTERCEPTOR_TEST_CONTEXT_ID"
-```
-
-The `--stop-on-error` flag halts on the first failure so you can diagnose the exact regression point.
+Sequential `interceptor act` plus explicit state reads is the default. Treat `batch` as unavailable until a focused smoke probe proves the installed runtime's accepted action names, context/group isolation, per-step failure reporting, and non-zero process exit on failure. Never infer success from the batch command's top-level exit or wrapper `success`; inspect every sub-result and assert the final URL/DOM state. If any falsifier fails, replay sequentially and report the batch runtime gate.
 
 ## Notes
 

@@ -65,7 +65,7 @@ This file is the **routing table** — it tells you where everything lives. The 
 - Testing doctrine — `Testing/TestingDoctrine.md`
 - System/user boundary — `SystemUserBoundary.md` (which files are SYSTEM, which are USER, how the boundary is enforced)
 - AI writing patterns (system-level reference) — `Writing/AIWritingPatterns.md`
-- Browser automation — `Skill("Interceptor")` (real Chrome, mandatory for verification)
+- Browser automation — `Skill("gstack")` for isolated parallel QA breadth; `Skill("Interceptor")` for real Chrome/session-bearing final proof; exact routing in `LIFEOS/RULES/Verification.md`
 - Claude Code knowledge — `Agent(subagent_type="claude-code-guide")`
 
 ## Principal — Identity & Voice (paths under `LIFEOS/USER/`)

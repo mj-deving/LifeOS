@@ -266,7 +266,7 @@ function obs(rec: Record<string, unknown>): void {
 }
 
 const BLOCK_MSGS: Record<string, (unit: string, ev: string) => string> = {
-  T1: (u, ev) => `WEB-DEPLOY VERIFICATION GAP [VerificationGate/T1]. You claimed: "${u}". The transcript shows the deployed thing was never probed after the deploy — ${ev}. Deployed ≠ live. Do ONE, then restate: (a) probe the deployed origin — an Interceptor navigate/screenshot of the live URL, or a curl returning 2xx/3xx — after the deploy; or (b) downgrade honestly ("deployed, not verified live"). This gate reads the transcript's real tool calls, not your wording — rewording won't pass it; verifying or downgrading will.`,
+  T1: (u, ev) => `WEB-DEPLOY VERIFICATION GAP [VerificationGate/T1]. You claimed: "${u}". The transcript shows the deployed thing was never probed after the deploy — ${ev}. Deployed ≠ live. Do ONE, then restate: (a) probe the deployed origin with the browser owner matching the claim, or with curl returning 2xx/3xx for an endpoint-only claim; or (b) downgrade honestly ("deployed, not verified live"). This gate reads the transcript's real tool calls, not your wording — rewording won't pass it; verifying or downgrading will.`,
   T2: (u, ev) => `FLOW VERIFICATION GAP [VerificationGate/T2]. You claimed: "${u}". The transcript shows the flow was never exercised — ${ev}. A render/screenshot proves a page painted; it does NOT prove the flow works (this exact gap shipped a 500ing Apple login). Do ONE, then restate: (a) drive the real flow — navigate + interact (submit/consent) + read the post-action state, or hit the endpoint and show the 2xx/3xx + Set-Cookie/redirect; or (b) downgrade honestly ("deployed, flow NOT exercised", ISC [DEFERRED-VERIFY]). This gate reads the transcript, not your wording — only verifying or downgrading passes it.`,
   T3: (u, ev) => `APPEARANCE VERIFICATION GAP [VerificationGate/T3]. You claimed: "${u}". The transcript shows no pixel image was captured AND read after the last frontend edit — ${ev}. A DOM read proves an element exists; only a viewed pixel proves it LOOKS right (this shipped the wrong logo 3×). Capture a non-blank image, Read it, then restate — or downgrade ("placed, not pixel-viewed").`,
 };
@@ -287,8 +287,8 @@ function evaluateClaim(
     };
   }
   if (claim.type === "T2") {
-    const caps = ev.filter((e) => e.kind === "interceptor-capture").length;
-    const inter = ev.filter((e) => e.kind === "interceptor-interact").length;
+    const caps = ev.filter((e) => e.kind === "interceptor-capture" || e.kind === "gstack-capture").length;
+    const inter = ev.filter((e) => e.kind === "interceptor-interact" || e.kind === "gstack-interact").length;
     return {
       acted: hadCodeEdit(ev) || hadDeploy(ev),
       verified: flowExercised(ev),

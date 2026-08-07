@@ -51,15 +51,16 @@ The instruction is stored with the session and appears in exports. Be specific: 
 
 ### 3. Walk Through the Flow
 
-Execute the flow manually using interceptor commands:
+Choose one recording mode explicitly:
+
+- **Operator recording:** perform the actions in the isolated Chrome window. The monitor captures trusted user events and can export them as a plan.
+- **Agent-built plan:** execute the flow with interceptor commands, save those exact successful commands as the plan, and validate it through ReplayFlow. Interceptor-injected events may appear in monitor telemetry but are filtered from plan export, so the export is not the plan authority in this mode.
 
 ```bash
 interceptor act e5 --context "$INTERCEPTOR_TEST_CONTEXT_ID"                    # Click a button
 interceptor act e12 "user@example.com" --context "$INTERCEPTOR_TEST_CONTEXT_ID"  # Type into a field
 interceptor act e8 --keys "Enter" --context "$INTERCEPTOR_TEST_CONTEXT_ID"     # Press Enter
 ```
-
-Or walk through the flow manually in Chrome — the monitor captures real user actions too (clicks, typing, scrolling, form submissions).
 
 The monitor records:
 - Every click, double-click, right-click (with element ref, role, and accessible name)
@@ -99,18 +100,20 @@ interceptor monitor export <SESSION_ID> --plan --with-bodies --context "$INTERCE
 
 ### 6. Save the Plan
 
-Save the exported plan to `skills/Interceptor/Flows/<flow-name>.sh` for future replay via the ReplayFlow workflow. (The `Flows/` directory currently holds only a README — recorded plans are the first artifacts you add there.)
+Save project-specific plans in the owning project's browser-test or evidence directory, not in the shared Interceptor skill. The shared `Flows/` directory is for reusable, publish-clean examples only.
 
 ### 7. Review the Plan
 
 Read the generated script. Check for:
+- At least one executable action for every action actually performed. Navigation-only export after clicks or input is a failed recording, not replay evidence.
 - `# TODO` comments where password fields were masked — these need manual value substitution
 - `# ref eN (no accessible name)` fallbacks — these may be fragile; consider adding accessible names to the UI
 - Commented network cues showing which API calls each action triggered
 
 ## Notes
 
-- The monitor records from Chrome's content script — it sees real user events, not just interceptor-injected ones.
+- The monitor records from Chrome's content script. Operator events are exportable; interceptor-injected events can be intentionally filtered from plan export.
+- A replayable claim requires a non-empty action plan plus a successful ReplayFlow final-state assertion. Event count alone is not evidence.
 - Password and credit card fields are automatically masked in recordings (`***N***` format).
 - Recordings are stored in JSONL format at the interceptor events path. Use `interceptor monitor export <sid> --json` for raw data.
 - Session recordings persist across interceptor restarts but are per-machine (not synced).

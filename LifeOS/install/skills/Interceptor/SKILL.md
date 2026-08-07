@@ -36,7 +36,7 @@ If this directory exists, load and apply any PREFERENCES.md, configurations, or 
 
 ## What It Does
 
-Interceptor drives the real Chrome/Brave browser from inside it, and drives native macOS apps when the bridge is installed. Six capability classes, each its own verb tree: visual capture, DOM read, JS eval, network capture, input, and record/replay. It stays logged into your real sessions, passes every major bot-detection check, and is the mandatory tool for visual deploy verification.
+Interceptor drives the real Chrome/Brave browser from inside it, and drives native macOS apps when the bridge is installed. Six capability classes, each its own verb tree: visual capture, DOM read, JS eval, network capture, input, and record/replay. It stays logged into the selected profile's sessions and avoids the ordinary CDP automation fingerprint. It is the Verification-of-Record owner for shipped, authenticated, session-bearing, or bot-sensitive browser claims; GStack owns isolated parallel headless QA breadth.
 
 ## The Problem
 
@@ -50,7 +50,7 @@ Interceptor is a Chrome extension that operates through the actual browser UI pl
 **Repo:** https://github.com/Hacker-Valley-Media/Interceptor
 **Install:** the signed `Interceptor-Browser-<v>.pkg` / `Interceptor-Full-<v>.pkg` from the upstream releases page, or `interceptor upgrade --full` on an existing install. Building from source is optional — see `Workflows/Update.md`.
 **Chrome extension:** the signed installer registers it for you. If you build from source instead, `Tools/Pin.sh` copies the built `extension/dist` into `~/.claude/skills/Interceptor/Extension/` — that directory does **not** ship with the skill, `Pin.sh` creates it — and Chrome loads it via "Load unpacked". Provenance is recorded in `Extension/PINNED_FROM.txt` (source path, manifest version, content SHA256, timestamp). Chrome disables unpacked extensions on every manifest bump, so after any source rebuild the copy must be **re-pinned and reloaded**. It does NOT auto-follow upstream.
-**Pinned binary:** `0.22.37` + one local patch — `interceptor --version` reports `0.22.37 (1783682, 2026-07-28)`. Built from the local branch `local-0.22.37` (origin/main at v0.22.37 + cherry-picked `screenshot --save` fix: honors `--out`, defaults to `~/Downloads` instead of cwd — NOT upstream; re-cherry-pick on every upgrade until upstreamed). Upstream is now a **three-surface** control plane: **Browser** + **macOS** + **iOS** (drive an owned, Developer-Mode iPhone via an on-device XCUITest runner over WiFi — `interceptor ios *`).
+**Runtime provenance:** verify `interceptor --version`, the installed binary path, the source repository commit, and `Extension/PINNED_FROM.txt` live before upgrades or runtime-sensitive claims. Do not encode a machine-local commit as portable skill doctrine. Upstream is now a **three-surface** control plane: **Browser** + **macOS** + **iOS** (drive an owned, Developer-Mode iPhone via an on-device XCUITest runner over WiFi — `interceptor ios *`).
 
 ### Capabilities Overview — Six Verb Trees
 
@@ -63,7 +63,7 @@ Each row is an independent capability class. Each one uses a different WebSocket
 | **JS EVAL** | `eval <code>`, `eval --main` | Run JavaScript in isolated or main world — **the way you read console errors, runtime exceptions, hydration warnings, and DOM state at runtime** |
 | **NETWORK** | `net log`, `net headers`, `net export --format har\|pcapng\|json`, `override`, `headers add/remove` | Passive request capture with zero CDP fingerprint; HAR 1.2 + pcapng for Wireshark |
 | **INPUT** | `click`, `type`, `keys`, `act <ref> [--trusted]`, `drag`, `scroll`, `select`, `focus` | Browser + native macOS input; `--trusted` for OS-level HID source state |
-| **RECORD/REPLAY** | `monitor start/stop`, `monitor export --plan`, `monitor export --format har` | Real user-flow capture as deterministic replay scripts; multi-session, browser + macOS AX events |
+| **RECORD/REPLAY** | `monitor start/stop`, `monitor export --plan`, `monitor export --format har` | Operator-event capture and export; agent-built plans use the exact successful commands because injected actions may be filtered from export |
 
 **Reading console errors** is a recipe, not a separate verb: inject a `console.error` / `window.error` listener via `eval --main`, store events on `window.__errs`, then `eval` again to read them back. Useful for hydration mismatches, React error boundaries, JS exceptions on load, and any silent runtime failure. **Triggering a reload between install and read loses the captured errors** — capture happens after load, so reproduce-by-reload doesn't help; instead capture forward from the next user action, or poll `getEventListeners(window)` / DOM mutation observers for evidence of failure.
 
@@ -98,7 +98,7 @@ CDP-based browser automation gets detected by sites. Interceptor is a Chrome ext
 
 ### Hard Prohibitions — Operative on Every Invocation
 
-**Visual verification goes through Interceptor only. The following are FORBIDDEN with zero exceptions:**
+**An Interceptor lane never falls back to raw OS capture or focus manipulation.** GStack remains separately allowed for the headless QA claims it owns; when the claim requires Interceptor, the following are forbidden with zero exceptions:
 
 - **`screencapture`** — the raw macOS screenshot binary. Not as a primary tool, not as a fallback when Interceptor wedges, not "just for one screenshot." Forbidden.
 - **`osascript` for Chrome control** — no `tell application "Google Chrome" to activate`, no `set frontmost of process`, no `set bounds of window`, no `set active tab index`, no `set index of window`, no other window-state mutation. Forbidden.

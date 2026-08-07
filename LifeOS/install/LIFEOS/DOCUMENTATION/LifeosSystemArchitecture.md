@@ -468,12 +468,13 @@ Formalizes how Pulse instantiates, manages, and evolves a Digital Assistant. Rep
 
 ### Browser Automation
 
-**Interceptor: real Chrome/Brave through a browser extension, zero CDP fingerprint.**
+**GStack and Interceptor: complementary browser owners selected by claim modality.**
 
-Handles screenshots, multi-step sessions, authenticated browsing, and DOM/console/network inspection through the actual browser UI, so it stays logged in and passes bot detection. Legacy built-in agents (BrowserAgent, UIReviewer, QATester) were removed 2026-06-10, and the headless agent-browser wrapper (the Browser skill) was retired 2026-07-04 in favor of Interceptor. All web-based output MUST be verified through the **Interceptor skill** before showing to the user. Playwright is banned across LifeOS.
+GStack owns isolated parallel headless breadth: interaction sweeps, responsive screenshots, console/network/performance inspection, scored QA, design review, and regression loops. Interceptor owns real Chrome/Brave through a browser extension for authenticated, session-bearing, or bot-sensitive paths and final Verification-of-Record where that modality matters. Legacy built-in browser agents were removed; the current owners are complementary, not globally exclusive. Direct hand-rolled Playwright is not a verification substitute, while GStack's owned Playwright runtime is allowed.
 
 - **Status:** Active
-- **Location:** `~/.claude/skills/Interceptor/` (real-Chrome automation + computer use, mandatory for verification)
+- **Locations:** `~/.claude/skills/gstack` (shared router to the GStack suite); `~/.claude/skills/Interceptor/` (real-Chrome automation + computer use)
+- **Exact routing:** `LIFEOS/RULES/Verification.md`
 
 ### Cloud Execution (Arbol)
 
@@ -718,4 +719,3 @@ The running log of the load-bearing choices that shape LifeOS — what we decide
 - **Superseded:** 2026-07-11 — the Router was retired when mode/tier classification (MINIMAL/NATIVE/ALGORITHM, E1–E5) was abolished system-wide. `TheRouter.hook.ts` was deleted; no successor classifier. Only model routing survives (`LIFEOS/TOOLS/models.ts` + `hooks/AgentInvocation.hook.ts`). Entry kept per the append-only convention.
 - **Source:** manual (2026-07-01)
 <!-- ad-src: manual#the-router -->
-

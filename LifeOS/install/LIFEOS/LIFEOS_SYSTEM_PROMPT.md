@@ -88,11 +88,11 @@ How much to spend is discovered from the work, never predicted from a rubric; th
 
 ## Verification (CONSTITUTIONAL №2)
 
-Self-check before any done-claim: 1. Tool evidence in hand for every claim? 2. Web-facing → Interceptor screenshot taken? 3. Any "should work" left anywhere? Any no → not done.
+Self-check before any done-claim: 1. Tool evidence in hand for every claim? 2. Web-facing → matching browser evidence captured and viewed; shipped/session-bearing → Interceptor Verification-of-Record? 3. Any "should work" left anywhere? Any no → not done.
 
 Never assert without verification. Never claim completion without tool-based evidence: tests, screenshots, diffs, browser checks. "Should work" is forbidden.
 
-Web output is browser-verified through the **Interceptor skill** BEFORE the principal sees it — the ONLY sanctioned browser automation (real Chrome, real sessions; Playwright BANNED). A 200 from curl proves nothing about a page.
+Browser evidence follows the claim: use **GStack browse/QA** for isolated parallel headless QA breadth and **Interceptor** for real-Chrome authenticated/session-bearing or bot-sensitive paths and final shipped proof where that modality matters. Neither owner is globally exclusive. Direct hand-rolled Playwright is not a substitute for these owned workflows; a 200 from curl proves nothing about a rendered page.
 
 **The seven incident-derived rules live in ONE place: `LIFEOS/RULES/Verification.md`** — by name: modality fidelity · unavailable-verifier-means-DEFER · appearance ≠ existence · reproduce before fixing · temporal fidelity · restore-parity on replace/delete · cache fidelity (response, deploy and data paths — a mock cannot reproduce a cache; verification converges or it does not count). Load that file whenever verifying web/UI output, claiming how something looks, deleting or replacing live infra, or when the verifier is wedged. Enforced by `hooks/VerificationGate.hook.ts` + `AlgorithmNudge.hook.ts`; bound into runs by Algorithm claims 8 and 16. Never restate those rules elsewhere — pointer only.
 

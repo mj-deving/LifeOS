@@ -1,7 +1,7 @@
 ---
 name: BrightData
 version: 1.2.20
-description: "4-tier progressive web scraping that auto-escalates WebFetch to curl to Interceptor to Bright Data proxy for bot detection and CAPTCHAs, with single-URL and multi-page crawl modes, output as markdown. USE WHEN Bright Data, scrape URL, web scraping, bot detection, crawl site, CAPTCHA, can't access, site blocking, extract page content, scrape whole site, spider domain, convert URL to markdown, getting blocked. NOT FOR simple public content (use WebFetch directly), social platform scraping with named actors (use Apify), or real-Chrome bot bypass with logged-in sessions and zero CDP fingerprint (use Interceptor)."
+description: "4-tier progressive web scraping that auto-escalates WebFetch to curl to GStack browser rendering to Bright Data proxy, with an Interceptor branch for real-session or bot-sensitive paths. Supports single URLs and multi-page crawls, output as markdown. USE WHEN Bright Data, scrape URL, web scraping, bot detection, crawl site, CAPTCHA, can't access, site blocking, extract page content, scrape whole site, spider domain, convert URL to markdown, getting blocked. NOT FOR simple public content (use WebFetch directly), social platform scraping with named actors (use Apify), or authenticated real-Chrome work as the primary goal (use Interceptor)."
 ---
 
 ## Customization
@@ -41,10 +41,10 @@ Scrapes a single URL (FourTierScrape) or crawls a whole site (Crawl), escalating
 |------|------|---------|----------------|
 | 1 | WebFetch | public content, no bot detection | free · ~2-5s |
 | 2 | curl + Chrome headers | user-agent / basic header checks | free · ~3-7s |
-| 3 | Interceptor (real Chrome) | JavaScript-rendered / SPA pages | free · ~10-20s |
+| 3 | GStack `browse`; Interceptor only when the claim needs a real session | JavaScript-rendered / SPA pages, optional authenticated or bot-sensitive branch | free · ~5-20s |
 | 4 | Bright Data MCP `mcp__Brightdata__scrape_as_markdown` | CAPTCHA, advanced fingerprinting, residential-IP needs | Bright Data credits · ~5-15s |
 
-Playwright is banned across LifeOS — Tier 3 is Interceptor. Skip-ahead: explicit "use Bright Data" → Tier 4; "use browser" → Tier 3; a domain that already failed Tier 1 → start at Tier 2. The exact curl header block, Cloudflare pre-check, and Interceptor commands live in `Workflows/FourTierScrape.md`.
+Tier 3 defaults to GStack for isolated browser rendering. Route its real-session or bot-sensitive branch through the Interceptor skill rather than issuing bare Interceptor commands. Skip-ahead: explicit "use Bright Data" → Tier 4; "use browser" → Tier 3; a domain that already failed Tier 1 → start at Tier 2. The exact curl header block and Cloudflare pre-check live in `Workflows/FourTierScrape.md`.
 
 ## Workflows
 
@@ -59,7 +59,7 @@ Crawl picks Light Crawl (MCP `scrape_batch` + link loop, ≤50 pages, ~$0.006/pa
 
 ## Gotchas
 
-- **4-tier escalation: WebFetch → curl → Interceptor → Bright Data proxy.** Always start at Tier 1 and escalate only when blocked. Playwright is banned across LifeOS.
+- **4-tier escalation: WebFetch → curl → GStack browser rendering → Bright Data proxy.** Use Interceptor instead of GStack only when the claim genuinely needs its real-session or bot-sensitive modality. Always start at Tier 1 and escalate only when blocked.
 - **Bright Data proxy has usage costs.** Don't use Tier 4 for sites accessible via Tier 1-3.
 - **CAPTCHA-solving introduces latency.** Allow extra time for Tier 4 responses.
 - **Credentials in `~/.claude/.env`** — BRIGHTDATA_API_KEY.

@@ -57,16 +57,18 @@ curl -L -A "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
 
 HTML returned → convert to markdown → Output. Empty/blocked/JS-required → Tier 3.
 
-## Tier 3 — Interceptor (real Chrome)
+## Tier 3 — Browser rendering by modality
 
-Renders JavaScript, handles cookies/sessions, real browser fingerprint. Playwright is banned across LifeOS.
+Default to GStack for isolated JavaScript rendering:
 
 ```bash
-interceptor open "<url>"        # renders JS, returns tree + flat text
-interceptor read --text-only    # extract rendered text
+browse open "<url>"
+browse text
 ```
 
-Rendered text → convert to markdown → Output. CAPTCHA / advanced bot detection → Tier 4.
+If the target specifically requires a logged-in real session or rejects ordinary automation, route this step through Interceptor's `ReadAndExtract` workflow; its preflight, context pin, and no-focus contract remain mandatory. Do not issue bare Interceptor commands from this workflow.
+
+Rendered text → convert to markdown → Output. CAPTCHA / residential-IP need → Tier 4.
 
 ## Tier 4 — Bright Data MCP
 
