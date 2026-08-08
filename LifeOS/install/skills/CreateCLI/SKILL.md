@@ -162,10 +162,10 @@ Activate when you see these patterns:
 
 ### Technology Stack Alignment
 
-Generated CLIs follow LifeOS standards:
-- ✅ **Runtime:** Bun (NOT Node.js)
-- ✅ **Language:** TypeScript (NOT JavaScript or Python)
-- ✅ **Package Manager:** Bun (NOT npm/yarn/pnpm)
+Generated CLIs follow LifeOS defaults; existing repository authority wins for AddCommand and UpgradeTier:
+- ✅ **Runtime:** Bun for a greenfield LifeOS-owned CLI; preserve an existing repository's runtime
+- ✅ **Language:** TypeScript, which is this skill's explicit capability; route existing non-TypeScript CLIs to their repository-native tooling instead of converting them
+- ✅ **Package Manager:** Bun for a greenfield LifeOS-owned CLI; preserve an existing repository's package manager
 - ✅ **Testing:** Vitest (when tests added)
 - ✅ **Output:** Deterministic JSON (composable)
 - ✅ **Documentation:** README + QUICKSTART (llcli pattern)
@@ -363,8 +363,8 @@ The `llcli` CLI (Limitless.ai API; retired 2026-07-15 when the backend moved to 
 
 ## Gotchas
 
-- **Always use bun, never npm/npx.** Zero exceptions per system prompt.
-- **TypeScript only.** Never generate Python CLIs unless the user explicitly approves.
+- **Greenfield LifeOS-owned TypeScript CLIs default to Bun/bunx.** In an existing repository, preserve its runtime and package manager unless project authority approves a switch.
+- **CreateCLI owns TypeScript CLIs.** Route Python or any other existing non-TypeScript CLI work through the repository's native tooling instead of converting it here.
 - **3-tier system:** Start with the simplest tier that fits. Don't over-engineer a Tier 3 CLI when Tier 1 suffices.
 
 ## Execution Log

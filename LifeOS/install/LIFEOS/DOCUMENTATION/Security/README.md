@@ -101,20 +101,23 @@ const EXTERNAL_WARNING =
 
 That's the entire defense delta beyond L1 and L2 on the ingress side.
 
-## Release Deny-List (canonical sensitive-pattern source)
+## Private deny-list and derived hash filter
 
-The release pipeline has its own constitutional surface: the **deny-list** at the release skill's `DENY_LIST.txt`. Plain text, one ripgrep-compatible regex per line, four sections (`Identity`, `Hostnames`, `Cloudflare IDs`, `Private Tokens`).
+Principal-specific leakage patterns live at `LIFEOS/USER/SECURITY/DENY_LIST.txt`. The file is private USER data and never ships in a public release. It contains one ripgrep- and JavaScript-compatible regex per non-comment line.
 
 | Consumer | What it does |
 |----------|--------------|
-| the release pipeline's `DenyListCheck.ts` | Step 0.5 precheck CLI — invoked at the start of every release-flavored workflow. `rg -i -f` over the live tree, classifies each hit as `private-zone` (in containment, will be scrubbed), `benign` (in `PATTERN_ALLOWLIST_FILES`), or `real-leak` (block release). |
-| the release pipeline's `ShadowRelease.ts` | Loads patterns at startup into `IDENTITY_PATTERNS` / `CF_ID_PATTERNS` / `PRIVATE_TOKEN_PATTERNS` (the G2 / G3 / G6 gate inputs). Same file, same patterns — no drift possible between precheck and build gates. |
+| `SkillHygieneGate.ts` | Scans public and private skill bodies with ripgrep, honors the narrow reviewed allowlist, and fails on identity strings, machine-bound home paths, or tracked vendored dependencies. |
+| `SystemFileGuard.hook.ts` | Compiles the same lines as JavaScript regexes and blocks matching writes to SYSTEM files while leaving USER containment paths writable. |
 
-The nine release-flavored workflows in the release skill (`CreateShadowRelease`, `CreateRelease`, `UpdateShadowRelease`, `CheckReleaseSecurity`, `PrivacyCheck`, `SecretScanning`, `IntegrityCheck`, `CrossRepoValidation`, `PushToLifeos`) all begin with a `## Step 0.5: Deny-list precheck` block invoking the CLI. Sub-2-second fail-fast guard before any rsync/copy/push touches the staging tree — additive defense against G2/G3/G6 which run later, inside the build.
+`DeriveDenyHashes.ts` provides a complementary privacy-preserving filter. It derives distinctive tokens from selected private USER files, stores only salted hashes in `LIFEOS/USER/SECURITY/DENY_HASHES.json`, and keeps the salt in the local `.env`. SystemFileGuard checks the curated regex list first and the derived hashes second. The hash filter catches newly added private tokens; it does not replace the curated regex list or make SkillHygieneGate run.
 
-Adding a pattern: append the regex line under the right section in `DENY_LIST.txt`. The next precheck run picks it up; the next `ShadowRelease.ts` build picks it up at startup. No code to edit.
+Missing-file behavior is explicit:
 
-Hard exclusions (kept OUT of the deny-list, intentionally): the public repo clone URL, `github.com/<repo-owner>/LifeOS` (legitimate attribution), `fTtv3eikoepIosk8dTZ5` (Algorithm voice, intentionally shipped).
+- On a generic public install with no personal data, SkillHygieneGate exits successfully with `skipped: true`, and SystemFileGuard reports that private-corpus scanning is inactive.
+- On a personalized install, provision the private USER deny-list before treating either result as a privacy validation.
+
+Adding a pattern means appending one compatible regex to the private USER file. Keep credentials and secret values out of it; credential scanners and native permission rules own those classes.
 
 ## What's NOT Here (and why)
 
@@ -135,7 +138,7 @@ The following existed in the old system and were **deleted** on 2026-05-06. Futu
 
 Net deletion: **~3,000 LOC of code + ~1,300 LOC of docs**.
 
-Also removed: `ContainmentGuard.hook.ts` (124 LOC, runtime PreToolUse). It blocked identity/credential strings from being written outside containment zones, but it duplicated work the **release pipeline** already does at build time. Containment is now release-only — the release pipeline's `ShadowRelease.ts` gates G1-G14 enforce zones at every public release. The runtime version was theatre against a regression class the release pipeline already catches before anything escapes private. See `LIFEOS/DOCUMENTATION/Tools/Containment.md`.
+`ContainmentGuard.hook.ts` was removed, then the write boundary returned in narrower form as `SystemFileGuard.hook.ts`. The current guard classifies Write/Edit/MultiEdit targets as USER or SYSTEM, leaves USER containment paths alone, and checks only new SYSTEM content against the private regex and salted-hash filters. See `LIFEOS/DOCUMENTATION/Tools/Containment.md`.
 
 ## If You're Tempted to Add Complexity
 

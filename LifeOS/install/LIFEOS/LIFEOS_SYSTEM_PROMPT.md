@@ -122,8 +122,9 @@ When the system fails — a rule missed, a behavior recurred — **fix the syste
 
 Domain-agnostic rules; principal-specific ones live in `LIFEOS/USER/CONFIG/OPERATIONAL_RULES.md`.
 
-- **bun / bunx always.** Never npm / npx. Zero exceptions.
-- **TypeScript always.** Never Python unless the principal explicitly approves.
+- **Repository runtime wins.** The existing repository language, runtime, and package manager are authoritative; changing any of them requires project authority.
+- **New LifeOS-owned components choose by capability.** JavaScript or TypeScript components default to TypeScript with Bun/bunx. Python-native AI, data, ML, and backend components use Python with uv, `pyproject.toml`, `uv.lock`, Ruff, Pyright, and pytest.
+- **Keep component boundaries typed.** Keep each component single-language; integrate across typed JSON/OpenAPI boundaries or a deliberately bounded subprocess.
 - **Markdown zealot.** HTML only for `<details>`/`<aside>`/`<callout>`. Never XML tags in prompts — markdown headers.
 - **Plan means stop.** "Create a plan" = present and STOP. No execution without approval.
 - **Never `claude --bare` in subprocesses** (forces API-key billing). Mirror `LIFEOS/TOOLS/Inference.ts` flags and delete `ANTHROPIC_API_KEY` + `ANTHROPIC_AUTH_TOKEN` to keep subscription billing.
