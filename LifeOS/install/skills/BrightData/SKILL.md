@@ -46,7 +46,7 @@ Scrapes a single URL (FourTierScrape) or crawls a whole site (Crawl), escalating
 
 Tier 3 defaults to GStack for isolated browser rendering. Route its real-session or bot-sensitive branch through the Interceptor skill rather than issuing bare Interceptor commands. Skip-ahead: explicit "use Bright Data" → Tier 4; "use browser" → Tier 3; a domain that already failed Tier 1 → start at Tier 2. The exact curl header block and Cloudflare pre-check live in `Workflows/FourTierScrape.md`.
 
-## Workflows
+## Workflow Routing
 
 When routing, output: `Running the **WorkflowName** workflow in the **BrightData** skill to ACTION...`
 
@@ -56,6 +56,15 @@ When routing, output: `Running the **WorkflowName** workflow in the **BrightData
 | Crawl | "crawl this site", "spider this domain", "map this website", "get all pages from", "scrape the whole site", "crawl all pages under /docs" | `Workflows/Crawl.md` |
 
 Crawl picks Light Crawl (MCP `scrape_batch` + link loop, ≤50 pages, ~$0.006/page) for a section, or Full Crawl (Bright Data Crawl API `api.brightdata.com/datasets/v3/trigger`, $1.50/1K pages) for whole sites.
+
+## Examples
+
+- "Scrape this JavaScript-rendered product page" → FourTierScrape starts with
+  WebFetch, escalates only on an observed block, and uses GStack at Tier 3.
+- "Read this page through my logged-in browser" → FourTierScrape branches to the
+  Interceptor skill because the required capability is the real session.
+- "Crawl every page under /docs" → Crawl selects the bounded or full-site path,
+  reports scope and cost before any paid Tier-4 call, and returns markdown.
 
 ## Gotchas
 
